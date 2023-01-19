@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+  PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-config.dtd">
+  
+ <!-- 
+ 	 이 문서의 형식이 configuration(환경설정)임을 알려줌.
+ 	 => configuration태그가 전체를 감싸는 구조
+ 	 DTD : 유효성 체크해주는 녀석(현재 문서안에서 사용할 수 있는 태그인지 검사)
+  -->
+  
+<configuration>
+
+	<!-- 
+		setting : MyBatis 구동 시, 선언할 설정들을 작성하는 영역
+	 -->
+	<settings>
+		<!-- 만약 null로 데이터가 전달되었다면, 빈칸이 아닌 "대문자" NULL인 문자열로 판단하게 한다.(NullPointerException 방지)-->
+		<setting name="jdbcTypeForNull" value="NULL"/> 
+	</settings>
+	
+	
+	
+	<!-- typeAlias : VO/DTO 클래스들의 풀 클래스명 대신 단순한 클래스명으로 사용하기 위해 별칭을 등록할 수 있는 영역 -->
+	<typeAliases>
+		<typeAlias type="com.kh.mybatis.member.model.vo.Member" alias="member"/>
+		<typeAlias type="com.kh.mybatis.board.model.vo.Board" alias="board"/>
+		<typeAlias type="com.kh.mybatis.board.model.vo.Reply" alias="reply"/>
+	</typeAliases>
+	
+	
+	
+    <!-- 
+  		environment : MyBatis에서 연동할 db정보들을 등록하는 공간(여러개 가능)
+  		=> default 속성으로 여러개의 id중 어떤 db를 기본 db로 사용할 건지 설정해줘야한다.
+      -->
+   <!-- 테스트용 연결용 디비를 설정한 해당 테스트용 db의 id로 설정할 수 있다 -->
+  <environments default="development">
+  
+    <environment id="development"> <!-- 트랜잭션메니저와 데이터소스 -->
+    
+      <!-- 
+      	   transactionManager 은 JDBC / MANAGED 둘중 하나 사용 가능
+      	   JDBC 	: 트랜잭션 관리를 직접 내가 하겠다(수동 COMMIT)
+      	   MANAGED 	: 개발자가 트랜잭션에 대해서 어떠한 영향도 행사하지 않겠다(자동 COMMIT) -> mybatis에게 맡김
+      	   ->오류가 나면 전체를 다 갈아엎어야함
+      -->
+      <transactionManager type="JDBC"/>
+      
+      
+      <!-- 
+      		dataSource type은 POOLED와 UNPOOLED 둘중 하나 사용 가능
+      		- ConnectionPool : Connection객체를 담아둘 수 있는 영역
+      						   한번 생성된 Connection객체를 담아두면 재사용해서 쓸 수 있음
+      		POOLED 	 : ConnectionPool 사용
+      		UNPOOLED : ConnectionPool 사용X
+      		
+       -->
+      <dataSource type="POOLED">
+        <property name="driver" value="oracle.jdbc.driver.OracleDriver"/>
+        <property name="url" value="jdbc:oracle:thin:@localhost:1521:xe"/>
+        <property name="username" value="MYBATIS"/>
+        <property name="password" value="MYBATIS"/>
+      </dataSource>
+      
+      
+    </environment>
+    
+  </environments>
+  
+  
+  <!-- mapper : 실행할 sql문들을 기록해둔 mapper파일들을 등록하는 영역 -->
+
+  <!-- 직접 등록해보기 insertMember -->
+  <mappers>
+    <mapper resource="/mappers/member-mapper.xml"/>
+    <mapper resource="/mappers/board-mapper.xml"/>
+  </mappers>
+   
+</configuration>

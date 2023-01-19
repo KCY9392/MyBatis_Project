@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="boardMapper">
+
+	<select id="selectListCount" resultType="Integer"> <!-- int, Int, Integer, integer등등 상관없음 -->
+		SELECT COUNT(*)
+		FROM BOARD
+		WHERE STATUS = 'Y'
+	</select>
+
+	<resultMap id="boardResultSet" type="board">
+		<result column="BOARD_NO" property="boardNo"/>
+		<result column="BOARD_TITLE" property="boardTitle"/>
+		<result column="USER_ID" property="boardWriter"/>
+		<result column="COUNT" property="count"/>
+		<result column="CREATE_DATE" property="createDate"/>
+		<result column="BOARD_CONTENT" property="boardContent"/>
+		<!-- result말고, 활용범위 다양 -->
+	</resultMap>
+	
+	
+	<resultMap id="boardResultSetType2" type="board">
+		<id column="BOARD_NO" property="boardNo"/>
+		<!-- pk값 표현하기위해 id로도 표현함(기능은 result와 동일) -->
+		<result column="BOARD_TITLE" property="boardTitle"/>
+		<result column="USER_ID" property="boardWriter"/>
+		<result column="COUNT" property="count"/>
+		<result column="CREATE_DATE" property="createDate"/>
+		<result column="BOARD_CONTENT" property="boardContent"/>
+		<!-- 댓글목록 -->
+		<collection property="list" resultMap="replyResultSet"></collection>
+		<!-- result말고, 활용범위 다양 -->
+	</resultMap>
+	
+
+	<select id="selectList" resultMap="boardResultSet"> 
+	<!-- useCache="false" -> 그때그때사용하는 값이 다를때 (조건문사용할경우) 캐시지워줌 -->
+		SELECT 
+			BOARD_NO,
+			BOARD_TITLE,
+			USER_ID,
+			COUNT,
+			CREATE_DATE
+		FROM BOARD B
+		JOIN MEMBER ON (BOARD_WRITER = USER_NO)
+		WHERE B.STATUS = 'Y'
+		ORDER BY BOARD_NO DESC
+	</select>
+	
+	<select id="boardDetail" parameterType="int" resultMap="boardResultSetType2">
+		SELECT 
+			BOARD_NO,
+			BOARD_TITLE,
+			M.USER_ID,
+			COUNT,
+			B.CREATE_DATE,
+			BOARD_CONTENT,
+            R.REPLY_NO,
+            R.REPLY_CONTENT,
+            M2.USER_ID AS REPLY_USER_ID,
+            R.CREATE_DATE AS REPLY_CREATE_DATE
+		FROM BOARD B
+		JOIN MEMBER M ON (BOARD_WRITER = USER_NO)
+        LEFT JOIN REPLY R ON (BOARD_NO = REF_BNO)
+        LEFT JOIN MEMBER M2 ON (R.REPLY_WRITER = M2.USER_NO)
+		WHERE B.STATUS = 'Y' AND B.BOARD_NO = #{boardNo}
+	</select>
+	
+	<select id="selectSearchListCount" parameterType="java.util.HashMap"
+		resultType="Integer">
+		<bind name="keyword2" value="'%' + keyword + '%'"/>
+		SELECT COUNT(*)
+		FROM BOARD B
+		JOIN MEMBER M ON(B.BOARD_WRITER = M.USER_NO)
+		WHERE B.STATUS = 'Y' 
+		<if test="category == 'writer'">
+			AND M.USER_ID LIKE #{keyword2}
+		</if>
+		<if test="category == 'title'">
+			AND B.BOARD_TITLE LIKE #{keyword2}
+		</if>
+		<if test="category == 'content'">
+			AND B.BOARD_CONTENT LIKE #{keyword2}
+		</if>
+	</select> 
+	
+	<select id="selectSearchList" parameterType="java.util.HashMap"
+		resultMap="boardResultSet">
+		<bind name="keyword2" value="'%' + keyword + '%'"/>
+		SELECT 
+			BOARD_NO,
+			BOARD_TITLE,
+			USER_ID,
+			COUNT,
+			CREATE_DATE
+		FROM BOARD B
+		JOIN MEMBER M ON (B.BOARD_WRITER = M.USER_NO)
+		WHERE B.STATUS = 'Y'
+			<if test="category == 'writer'">
+				AND M.USER_ID LIKE #{keyword2}
+			</if>
+			<if test="category == 'title'">
+				AND B.BOARD_TITLE LIKE #{keyword2}
+			</if>
+			<if test="category == 'content'">
+				AND B.BOARD_CONTENT LIKE #{keyword2}
+			</if>
+		ORDER BY B.BOARD_NO DESC
+	</select>
+	
+	
+	<update id="CountAdd" parameterType="int">
+		UPDATE BOARD
+		SET COUNT = COUNT+1
+		WHERE BOARD_NO = #{boardNo}
+	</update>
+	
+	
+	<resultMap id="replyResultSet" type="reply">
+		<id column="REPLY_NO" property="replyNo"/>
+		<result column="REPLY_CONTENT" property="replyContent"/>
+		<result column="REPLY_USER_ID" property="replyWriter"/>
+		<result column="REPLY_CREATE_DATE" property="createDate"/>
+		<!-- result말고, 활용범위 다양 -->
+	</resultMap>
+	
+	
+	<resultMap id="replyResultSetType2" type="reply">
+		<id column="REPLY_NO" property="replyNo"/>
+		<result column="REPLY_CONTENT" property="replyContent"/>
+		<result column="REPLY_CREATE_DATE" property="createDate"/>
+		<!-- result말고, 활용범위 다양 -->
+		<association property="member" javaType="member">
+			<id column="USER_NO" property="userNo"/>
+	    	<result column="USER_ID" property="userId"/>
+		</association>
+	</resultMap>
+	
+	
+	<select id="selectReplyList" parameterType="int" resultMap="replyResultSetType2">
+		SELECT
+			REPLY_NO,
+			REPLY_CONTENT,
+			CREATE_DATE,
+			USER_NO,
+			USER_ID
+		FROM REPLY R
+		JOIN MEMBER M ON(REPLY_WRITER=USER_NO)
+		WHERE R.STATUS = 'Y' AND REF_BNO = #{boardNo}
+	</select>
+	
+	
+	<insert id="insertReply" parameterType="java.util.HashMap">
+		INSERT INTO REPLY(REPLY_NO, REPLY_CONTENT, REF_BNO, REPLY_WRITER)
+		VALUES(SEQ_RNO.NEXTVAL, #{replyText}, #{boardNo}, #{userNo})
+	</insert>
+	
+	
+</mapper> 
